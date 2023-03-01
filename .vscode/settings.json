@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "*.toml": "ini",
+        "cmath": "cpp",
+        "thread": "cpp",
+        "chrono": "cpp",
+        "random": "cpp",
+        "*.tcc": "cpp",
+        "functional": "cpp",
+        "algorithm": "cpp",
+        "complex": "cpp"
+    },
+    "cSpell.words": [
+        "fourier",
+        "Nyquist",
+        "tparam"
+    ],
+}

@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Jupyter backups
+.ipynb_checkpoints
+
+# PlatformIO build folder
+.pio
