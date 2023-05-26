@@ -11,7 +11,9 @@
         "complex": "cpp"
     },
     "cSpell.words": [
+        "blit",
         "fourier",
+        "INFRALOC",
         "Nyquist",
         "tparam"
     ],

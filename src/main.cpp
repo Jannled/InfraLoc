@@ -1,5 +1,7 @@
 #include <Arduino.h>
 
+#include <bitset>         // std::bitset
+
 #include "mymath.hpp"
 
 // --- CONFIG ---
@@ -23,10 +25,19 @@ const unsigned int k = 11;
 number_t sampleBuffer[SAMPLE_BUFFER_SIZE] = {0};
 size_t sampleIndex = 0;
 
+number_t transformedSignals[2][NUM_IR_RECEIVER] = {0};
+
 // Defines
 void taskGatherSample();
 void taskCalculateFFT();
 void switchChannel(uint8_t channel);
+void taskPrintResults();
+void printNumberArray(number_t values[], size_t n);
+
+// Fourier Cache
+number_t fourierCacheSin[SAMPLE_BUFFER_SIZE];
+number_t fourierCacheCos[SAMPLE_BUFFER_SIZE];
+number_t fourierCacheCosZero[SAMPLE_BUFFER_SIZE];
 
 void setup()
 {
@@ -44,6 +55,13 @@ void setup()
 	Serial.flush();
 
 	switchChannel(0);
+
+	// Cache the factors for the FFT
+	Serial.println("Generating Fourier Cache...");
+	generateFourierCacheSin(fourierCacheSin, SAMPLE_BUFFER_SIZE, k);
+	generateFourierCacheCos(fourierCacheCos, SAMPLE_BUFFER_SIZE, k);
+	generateFourierCacheCos(fourierCacheCosZero, SAMPLE_BUFFER_SIZE, 0);
+	Serial.println("Done!");
 }
 
 void loop()
@@ -53,13 +71,19 @@ void loop()
 	auto now = micros();
 	if(!(now - lastTime <= 1000000UL/SAMPLES_PER_SECOND))
 	{
-		lastTime = now;
 		taskGatherSample();
+		lastTime = now;
 	}
 	
 	// Task 2
 	if(sampleIndex >= SAMPLE_BUFFER_SIZE)
+	{
 		taskCalculateFFT();
+
+		// Task 3
+		if(muxChannel == 0)
+			taskPrintResults();
+	}
 }
 
 void taskGatherSample()
@@ -76,7 +100,7 @@ void taskCalculateFFT()
 
 	// Select the next channel
 	muxChannel = (muxChannel + 1) % NUM_IR_RECEIVER;
-	//switchChannel(muxChannel);
+	switchChannel(muxChannel);
 	
 	#ifdef DEBUG_VALUES
 	Serial.print("[");
@@ -89,24 +113,44 @@ void taskCalculateFFT()
 	Serial.println("]");
 	#else
 	// Calculate FFT
-	number_t dcOffset = cachedFourierDC<SAMPLE_BUFFER_SIZE>(sampleBuffer);
-	number_t result = euclideanDistance(cachedFourierComponent<SAMPLE_BUFFER_SIZE, k>(sampleBuffer));
+	number_t dcOffset = cachedFourierDC(sampleBuffer, SAMPLE_BUFFER_SIZE, k, fourierCacheCosZero);
+	number_t result = euclideanDistance(cachedFourierComponent(sampleBuffer, SAMPLE_BUFFER_SIZE, k, fourierCacheSin, fourierCacheCos));
 
-	Serial.print("Channel D" + muxChannel+1);
-	Serial.print(", DC Offset: ");
-	Serial.print(dcOffset);
-	Serial.print("Signal strength: ");
-	Serial.println(result);
+	transformedSignals[0][muxChannel] = dcOffset;
+	transformedSignals[1][muxChannel] = result;
+
+	//char output[512] = "";
+	//snprintf(output, 512, "Channel D%02d, DC Offset %9.1f, Signal strength: %9.1f", muxChannel+1, dcOffset, result);
+	//Serial.println(output);
+	//delay(100);
 	#endif
 
 	digitalWrite(LED_BUILTIN, LOW);
 }
 
+void taskPrintResults()
+{
+	printNumberArray(transformedSignals[1], NUM_IR_RECEIVER);
+}
+
+void printNumberArray(number_t values[], size_t n)
+{
+	Serial.print("[");
+	Serial.print(values[0]);
+	for(int i=1; i<n; i++)
+	{
+		Serial.print(",");
+		Serial.print(values[i]);
+	}
+	Serial.println("]");
+}
+
 void switchChannel(uint8_t channel)
 {
-	digitalWrite(MUX_S0, channel & (1 << 0));
-	digitalWrite(MUX_S1, channel & (1 << 1));
-	digitalWrite(MUX_S2, channel & (1 << 2));
-	digitalWrite(MUX_S3, channel & (1 << 3));
+	std::bitset<sizeof(uint8_t)*8> channelBits(channel);
+	digitalWrite(MUX_S0, channelBits.test(0));
+	digitalWrite(MUX_S1, channelBits.test(1));
+	digitalWrite(MUX_S2, channelBits.test(2));
+	digitalWrite(MUX_S3, channelBits.test(3));
 	delayMicroseconds(2);
 }

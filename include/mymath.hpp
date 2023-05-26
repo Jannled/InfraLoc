@@ -20,18 +20,18 @@ typedef struct
 } cmplx_t;
 
 // https://stackoverflow.com/a/34465458
-template<int N>
+template<int N, int k>
 struct SinCache {
-	explicit constexpr SinCache(int k): lut() {
+	explicit constexpr SinCache(): lut() {
 		for(int i=0; i<N; i++)
 			lut[i] = sin((-2*MY_PI*k*i) / N);
 	}
 	number_t lut[N];
 };
 
-template<int N>
+template<int N, int k>
 struct CosCache {
-	explicit constexpr CosCache(int k): lut() {
+	explicit constexpr CosCache(): lut() {
 		for(int i=0; i<N; i++)
 			lut[i] = cos((-2*MY_PI*k*i) / N);
 	}
@@ -65,10 +65,10 @@ cmplx_t fourierComponent(number_t values[], size_t n, number_t k);
  * @return cmplx_t 
  */
 template<int n, int k>
-cmplx_t cachedFourierComponent(const number_t values[])
+cmplx_t compiledFourierComponent(const number_t values[])
 {
-	constexpr auto fourierCache_cos = CosCache<n>(k);
-	constexpr auto fourierCache_sin = SinCache<n>(k);
+	constexpr auto fourierCache_cos = CosCache<n, k>();
+	constexpr auto fourierCache_sin = SinCache<n, k>();
 
 	static_assert(abs(MY_PI - 3.141) < 0.001);
 
@@ -97,9 +97,9 @@ cmplx_t cachedFourierComponent(const number_t values[])
  * @return number_t 
  */
 template<int n>
-number_t cachedFourierDC(const number_t values[])
+number_t compiledFourierDC(const number_t values[])
 {
-	static constexpr auto fourierCache_cos = CosCache<n>(0);
+	static constexpr auto fourierCache_cos = CosCache<n, 0>();
 
 	number_t dcOffset = 0.0;
 
@@ -108,6 +108,14 @@ number_t cachedFourierDC(const number_t values[])
 
 	return dcOffset;
 }
+
+cmplx_t cachedFourierComponent(number_t data[], size_t n, number_t k, number_t sinCache[], number_t cosCache[]);
+
+number_t cachedFourierDC(number_t data[], size_t n, number_t k, number_t cosCacheZero[]);
+
+void generateFourierCacheSin(number_t cache[], size_t n, number_t k);
+
+void generateFourierCacheCos(number_t cache[], size_t n, number_t k);
 
 /**
  * @brief Hamming Window
