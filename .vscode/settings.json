@@ -14,7 +14,11 @@
         "blit",
         "fourier",
         "INFRALOC",
+        "matplotlib",
         "Nyquist",
-        "tparam"
+        "sertools",
+        "tparam",
+        "wxpython"
     ],
+    "python.analysis.typeCheckingMode": "basic",
 }
