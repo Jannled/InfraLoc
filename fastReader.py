@@ -9,6 +9,7 @@ from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib as mpl
+import matplotlib.colors as col
 
 import serial
 import serial.tools.list_ports as sertools
@@ -100,41 +101,24 @@ class MyAnimation(animation.Animation):
 				a.set_animated(self._blit)
 
 class Scope:
-	def __init__(self, ax, maxt=2, dt=0.02):
+	def __init__(self, ax, scopeChannels = list(range(16)), maxt=2, dt=0.02, maxv=100000):
 		self.ax = ax
+		self.scopeChannels = scopeChannels
 		self.dt = dt
 		self.maxt = maxt
+		self.maxv = maxv
+
 		self.tdata = [0]
+		self.yData = [[0] for x in range(0, len(scopeChannels))]
 
-		self.ydata1 = [0]
-		self.ydata2 = [0]
-		self.ydata3 = [0]
-		self.ydata4 = [0]
-		self.ydata5 = [0]
-		self.ydata6 = [0]
-		self.ydata7 = [0]
-		self.ydata8 = [0]
+		self.lines = [None] * len(scopeChannels)
+		for l in range(0, len(scopeChannels)):
+			self.lines[l] = Line2D(self.tdata, self.yData[l], color=col.hsv_to_rgb((1/len(scopeChannels)*l, 1, 1)), label="D"+str(scopeChannels[l]))
+			self.ax.add_line(self.lines[l])
 
-		self.line1 = Line2D(self.tdata, self.ydata1)
-		self.line2 = Line2D(self.tdata, self.ydata2)
-		self.line3 = Line2D(self.tdata, self.ydata3)
-		self.line4 = Line2D(self.tdata, self.ydata4)
-		self.line5 = Line2D(self.tdata, self.ydata5)
-		self.line6 = Line2D(self.tdata, self.ydata6)
-		self.line7 = Line2D(self.tdata, self.ydata7)
-		self.line8 = Line2D(self.tdata, self.ydata8)
-
-		self.ax.add_line(self.line1, color=)
-		self.ax.add_line(self.line2, color=)
-		self.ax.add_line(self.line3, color=)
-		self.ax.add_line(self.line4, color=)
-		self.ax.add_line(self.line5, color=)
-		self.ax.add_line(self.line6, color=)
-		self.ax.add_line(self.line7, color=)
-		self.ax.add_line(self.line8, color=)
-
-		self.ax.set_ylim(-.1, 200000)
+		self.ax.set_ylim(-.1, self.maxv)
 		self.ax.set_xlim(0, self.maxt)
+		self.ax.legend(handles=self.lines)
 
 	def update(self, y):
 		if y is None:
@@ -144,14 +128,8 @@ class Scope:
 		if lastt >= self.tdata[0] + self.maxt:  # reset the arrays
 			self.tdata = [self.tdata[-1]]
 
-			self.ydata1 = [self.ydata1[-1]]
-			self.ydata2 = [self.ydata2[-1]]
-			self.ydata3 = [self.ydata3[-1]]
-			self.ydata4 = [self.ydata4[-1]]
-			self.ydata5 = [self.ydata5[-1]]
-			self.ydata6 = [self.ydata6[-1]]
-			self.ydata7 = [self.ydata7[-1]]
-			self.ydata8 = [self.ydata8[-1]]
+			for l in range(0, len(self.scopeChannels)):
+				self.yData[l] = [self.yData[l][-1]]
 
 			self.ax.set_xlim(self.tdata[0], self.tdata[0] + self.maxt)
 			self.ax.figure.canvas.draw()
@@ -162,28 +140,14 @@ class Scope:
 
 		self.tdata.append(t)
 
-		self.ydata1.append(y[0])
-		self.ydata2.append(y[1])
-		self.ydata3.append(y[2])
-		self.ydata4.append(y[3])
-		self.ydata5.append(y[4])
-		self.ydata6.append(y[5])
-		self.ydata7.append(y[6])
-		self.ydata8.append(y[7])
+		for l in range(0, len(self.scopeChannels)):
+			self.yData[l].append(y[self.scopeChannels[l]])
+			self.lines[l].set_data(self.tdata, self.yData[l])
 
-		self.line1.set_data(self.tdata, self.ydata1)
-		self.line2.set_data(self.tdata, self.ydata2)
-		self.line3.set_data(self.tdata, self.ydata3)
-		self.line4.set_data(self.tdata, self.ydata4)
-		self.line5.set_data(self.tdata, self.ydata5)
-		self.line6.set_data(self.tdata, self.ydata6)
-		self.line7.set_data(self.tdata, self.ydata7)
-		self.line8.set_data(self.tdata, self.ydata8)
-
-		return self.line1, 
+		return self.lines
 
 def emitter(p=0.1):
-	"""Return a random value in [0, 1) with probability p, else 0."""
+	"""Return an array from the serial console"""
 	global serialStream
 	global receiveBuffer
 
@@ -201,7 +165,7 @@ def emitter(p=0.1):
 					continue
 				else:
 					data = [float(i) for i in stripped.removeprefix('[').removesuffix(']').split(',')]
-					print(data)
+					#print(data)
 					yield data
 					return
 
@@ -212,13 +176,12 @@ def main():
 
 	print("Starting Serial Plotter")
 	fig, ax = plt.subplots()
-	scope = Scope(ax)
+	scope = Scope(ax, [1, 5, 9, 13])
 
 	# Start Serial
 	print("Connecting to " + devices[device].name)
 	with serial.Serial(devices[device].name, 115200, timeout=5) as ser:
 		serialStream = ser
-		eventSource = NakedEventSource()
 		#ani = MyAnimation(fig, eventSource, scope.update, blit=False)
 
 		# pass a generator in "emitter" to produce data for the update func

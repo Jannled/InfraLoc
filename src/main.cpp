@@ -43,7 +43,7 @@ void setup()
 {
 	Serial.begin(115200);
 	delay(100);
-	Serial.println("Infraloc v3");
+	Serial.println("InfraLoc v3");
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	pinMode(15, OUTPUT);
