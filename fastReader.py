@@ -17,7 +17,7 @@ import serial.tools.list_ports as sertools
 # pip install wxpython
 
 devices = sertools.comports()
-device = 1
+device = 0
 serialStream = None
 
 receiveBuffer: str = ""
@@ -31,12 +31,12 @@ class Scope:
 		self.maxt = maxt
 		self.maxv = maxv
 
-		self.tdata = [0]
+		self.tdata = [0.0]
 		self.yData = [[0] for x in range(0, len(scopeChannels))]
 
-		self.lines = [None] * len(scopeChannels)
+		self.lines: list[Line2D] = []
 		for l in range(0, len(scopeChannels)):
-			self.lines[l] = Line2D(self.tdata, self.yData[l], color=col.hsv_to_rgb((1/len(scopeChannels)*l, 1, 1)), label="D"+str(scopeChannels[l]))
+			self.lines.append(Line2D(self.tdata, self.yData[l], color=col.hsv_to_rgb((1/len(scopeChannels)*l, 1, 1)), label="D"+str(scopeChannels[l])))
 			self.ax.add_line(self.lines[l])
 
 		self.ax.set_ylim(-.1, self.maxv)
@@ -64,6 +64,8 @@ class Scope:
 		self.tdata.append(t)
 
 		for l in range(0, len(self.scopeChannels)):
+			assert isinstance(self.lines[l], Line2D)
+
 			self.yData[l].append(y[self.scopeChannels[l]])
 			self.lines[l].set_data(self.tdata, self.yData[l])
 
@@ -75,8 +77,10 @@ def emitter(p=0.1):
 	global serialStream
 	global receiveBuffer
 
+	assert serialStream is not None
+
 	if serialStream.in_waiting > 0:
-		receiveBuffer += serialStream.read_all().decode('ASCII')
+		receiveBuffer += serialStream.read_all().decode('ASCII') # type: ignore
 
 		splitted = receiveBuffer.split('\n')
 		receiveBuffer = splitted[len(splitted) - 1]
@@ -107,7 +111,6 @@ def main():
 	print("Connecting to " + devices[device].name)
 	with serial.Serial(devices[device].name, 115200, timeout=5) as ser:
 		serialStream = ser
-		#ani = MyAnimation(fig, eventSource, scope.update, blit=False)
 
 		# pass a generator in "emitter" to produce data for the update func
 		ani = animation.FuncAnimation(fig, scope.update, emitter, interval=50, blit=False, save_count=100)
