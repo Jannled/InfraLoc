@@ -15,16 +15,23 @@ import serial
 import serial.tools.list_ports as sertools
 
 # pip install wxpython
+# pip install pyside6 # (alternative if wxpython fails to build)
 
 devices = sertools.comports()
-device = 0
+device_reciever = 1
+device_sender = 0
 serialStream = None
 
 receiveBuffer: str = ""
 
+MAX_Y = 40000
+
+SERVO_MIN = 500
+SERVO_MAX = 1833
+
 
 class Scope:
-	def __init__(self, ax, scopeChannels = list(range(16)), maxt=2, dt=0.02, maxv=100000):
+	def __init__(self, ax, scopeChannels = list(range(16)), maxt=2, dt=0.02, maxv=MAX_Y):
 		self.ax = ax
 		self.scopeChannels = scopeChannels
 		self.dt = dt
@@ -42,6 +49,7 @@ class Scope:
 		self.ax.set_ylim(-.1, self.maxv)
 		self.ax.set_xlim(0, self.maxt)
 		self.ax.legend(handles=self.lines)
+
 
 	def update(self, y):
 		if y is None:
@@ -105,11 +113,12 @@ def main():
 
 	print("Starting Serial Plotter")
 	fig, ax = plt.subplots()
-	scope = Scope(ax, [1, 5, 9, 13])
+	#scope = Scope(ax, [1, 5, 9, 13])
+	scope = Scope(ax)
 
 	# Start Serial
-	print("Connecting to " + devices[device].name)
-	with serial.Serial(devices[device].name, 115200, timeout=5) as ser:
+	print("Connecting to " + devices[device_reciever].name)
+	with serial.Serial(devices[device_reciever].name, 115200, timeout=5) as ser:
 		serialStream = ser
 
 		# pass a generator in "emitter" to produce data for the update func
@@ -123,4 +132,6 @@ def main():
 
 # --- Main ---
 if __name__ == "__main__":
+	#mpl.use('wxAgg')
+	#mpl.use('QtAgg')
 	main()

@@ -103,7 +103,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=60107",
+                "PLATFORMIO=60110",
                 "ARDUINO_RASPBERRY_PI_PICO",
                 "ARDUINO_ARCH_RP2040",
                 "ARM_MATH_CM0PLUS",
@@ -158,8 +158,8 @@
                 "ARDUINO_ARCH_MBED",
                 ""
             ],
-            "cStandard": "c11",
-            "cppStandard": "c++14",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
             "compilerPath": "C:/Users/Jannled/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc.exe",
             "compilerArgs": [
                 "-mcpu=cortex-m0plus",

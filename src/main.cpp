@@ -97,10 +97,6 @@ void taskCalculateFFT()
 
 	// Reset the samples
 	sampleIndex = 0;
-
-	// Select the next channel
-	muxChannel = (muxChannel + 1) % NUM_IR_RECEIVER;
-	switchChannel(muxChannel);
 	
 	#ifdef DEBUG_VALUES
 	Serial.print("[");
@@ -119,6 +115,10 @@ void taskCalculateFFT()
 	transformedSignals[0][muxChannel] = dcOffset;
 	transformedSignals[1][muxChannel] = result;
 
+	// Select the next channel
+	muxChannel = (muxChannel + 1) % NUM_IR_RECEIVER;
+	switchChannel(muxChannel);
+
 	//char output[512] = "";
 	//snprintf(output, 512, "Channel D%02d, DC Offset %9.1f, Signal strength: %9.1f", muxChannel+1, dcOffset, result);
 	//Serial.println(output);
@@ -131,13 +131,39 @@ void taskCalculateFFT()
 void taskPrintResults()
 {
 	printNumberArray(transformedSignals[1], NUM_IR_RECEIVER);
+
+	uint8_t highestIndex = 0;
+	for(size_t i=0; i<NUM_IR_RECEIVER; i++)
+	{
+		if(transformedSignals[1][i] > transformedSignals[1][highestIndex])
+			highestIndex = i;
+	}
+
+	number_t angle = highestIndex * (360/NUM_IR_RECEIVER);
+
+	const uint8_t leftChannel = (highestIndex - 1) % NUM_IR_RECEIVER;
+	const uint8_t rightChannel = (highestIndex + 1) % NUM_IR_RECEIVER;
+
+	const number_t leftValue = transformedSignals[1][leftChannel];
+	const number_t currentValue = transformedSignals[1][highestIndex];
+	const number_t rightValue = transformedSignals[1][rightChannel];
+
+	if(leftValue > rightValue)
+		angle -= (leftValue/currentValue) * (360/NUM_IR_RECEIVER);
+	else
+		angle += (rightValue/currentValue) * (360/NUM_IR_RECEIVER);
+
+	//Serial.print("[");
+	//Serial.print(angle);
+	//Serial.println(", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]");
+	//Serial.print("°  ");
 }
 
 void printNumberArray(number_t values[], size_t n)
 {
 	Serial.print("[");
 	Serial.print(values[0]);
-	for(int i=1; i<n; i++)
+	for(size_t i=1; i<n; i++)
 	{
 		Serial.print(",");
 		Serial.print(values[i]);
