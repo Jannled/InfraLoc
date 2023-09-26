@@ -56,3 +56,7 @@ dkms.conf
 
 # PlatformIO build folder
 .pio
+
+# KiCad Backups
+*-backups/
+*.log

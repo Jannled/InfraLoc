@@ -18,13 +18,13 @@ import serial.tools.list_ports as sertools
 # pip install pyside6 # (alternative if wxpython fails to build)
 
 devices = sertools.comports()
-device_reciever = 1
+device_reciever = 0
 device_sender = 0
 serialStream = None
 
 receiveBuffer: str = ""
 
-MAX_Y = 40000
+MAX_Y = 4000
 
 SERVO_MIN = 500
 SERVO_MAX = 1833
