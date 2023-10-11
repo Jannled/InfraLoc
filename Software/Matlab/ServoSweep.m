@@ -18,11 +18,13 @@ lineColors = hsv2rgb(lineColors);
 lineColors = squeeze(lineColors);
 
 %% Start Serial
-serial_sender = serialport("COM10", 115200);
+serial_sender = serialport("COM4", 115200);
 serial_recver = serialport("COM7", 115200);
 fprintf("[Serial] %s", serial_sender.readline());
 
-steps = flip(servo_limits(1):STEP_SIZE:servo_limits(2));
+steps = servo_limits(1):STEP_SIZE:servo_limits(2);
+steps(end+1) = steps(end) + STEP_SIZE;
+steps = flip(steps);
 degrees = map(steps, servo_limits(1), servo_limits(2), servo_angles(1), servo_angles(2));
 
 %% Wait for the servo while making sure RX buffer does not overflow
@@ -53,6 +55,10 @@ plot1 = plot(degrees, data);
 
 for i = 1:NUM_CHANNELS
     set(plot1(i), 'DisplayName', sprintf("D%02d", i));
+    % Draw dashed X lines for the expected peaks
+    if i >= 5 && i <= 13
+        xline(expectedAngles(i), ':', 'Color', '[0.5, 0.5, 0.5]','HandleVisibility','off');
+    end
 end
 
 xlabel("Winkel [deg]");
@@ -80,12 +86,17 @@ title("Angle over Value");
 subplot(2, 2, 4);
 angleDiff = expectedAngles - maxAngles;
 bar(expectedAngles-maxAngles);
+xlabel("Kanal")
 ylabel("Abweichung [deg]")
 %title("Angle difference");
 xlim([5 - 0.5, 13 + 0.5]);
 
-fprintf("D06 - D12 Min: %.4f°, Max: %.4f°, Mean: %.4f°, Median: %.4f° \n", ...
-    min(angleDiff(6:12)), max(angleDiff(6:12)), mean(angleDiff(6:12)), median(angleDiff(6:12)) ...
+fprintf("D06 - D12 Min: %.4f°, Max: %.4f°, Mean: %.4f°, Median: %.4f° Variance: %.4f°\n", ...
+    min(angleDiff(6:12)), ...
+    max(angleDiff(6:12)), ...
+    mean(angleDiff(6:12)), ...
+    median(angleDiff(6:12)), ...
+    var(angleDiff(6:12)) ...
 );
 
 %% Calculate the angles InfraLoc would spit out
